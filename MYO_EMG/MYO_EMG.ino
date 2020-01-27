@@ -4,6 +4,8 @@
  * @author  Kira Wadden
  * @date    August 2018
  * @brief   Communicating between the Myo armband and ESP32 via BLE to receive EMG notifications
+ * 
+ * Edited by Caleb Tseng-Tham, January 2020
  */
 
 #include <BLEDevice.h>
@@ -25,17 +27,58 @@ static boolean doConnect = false;
 static boolean connected = false;
 static BLERemoteCharacteristic* pRemoteCharacteristic;
 
+// triggered will be true when the data from Myo is greater than 100 (experimental data)
+bool triggered = false;
+
+// Variables to do "smoothing" on data (Found by Caleb Tseng-Tham from: https://www.arduino.cc/en/Tutorial/Smoothing)
+const int numReadings = 10;
+int readings[numReadings];      // the readings from the analog input
+int readIndex = 0;              // the index of the current reading
+int total = 0;                  // the running total
+int average = 0;                // the average
+// End of Smoothing Variables 
+
+int LED_pin = 23;
+
 static void notifyCallback(
   BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
     Serial.print("Notify callback for EMG Data Characteristic: ");
     Serial.println(pBLERemoteCharacteristic->getUUID().toString().c_str());
     for ( int i = 0; i < length; i ++)
     {
-      Serial.println((int8_t)pData[i]);
-      Serial.print(" ");
+      Serial.print(-200);
+      Serial.print(",");
+      Serial.print(200);
+      Serial.print(",");
+      int data_readout = (int8_t)pData[i];
+      total = total - readings[readIndex];
+      readings[readIndex] = data_readout;
+      total = total + readings[readIndex];
+      readIndex = readIndex + 1;
+
+      // If we're at the end of the array
+      if (readIndex >= numReadings){
+        readIndex = 0;
+      }
+
+      average = total / numReadings; 
+      
+      
+      Serial.println(average);
+      if  (average > 100){
+        triggered = true;
+        digitalWrite(LED_pin, HIGH);
+        break;
+      }
+      else{
+        triggered = false;
+        digitalWrite(LED_pin, LOW);
+      }
+      //Serial.print(" ");
     }
 }
 
+// Connects to a server at a certain BLEAddress
 bool connectToServer(BLEAddress pAddress) {
     Serial.print("Forming a connection to ");
     Serial.println(pAddress.toString().c_str());
@@ -139,20 +182,25 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
 
 //bool checkDoubleFlex() {
-//    if (triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 1)] && !triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 2)] && triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 3)])
+//    if (triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 1)] && !triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 2)] && triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 3)]){
+//      Serial.println("Double flex detected");
 //      return true;
-//    
+//    }
 //    return false;
 //  }
-//
-//  int findIndexInTriggerPattern(int index){
-//    if (index >= 0) return index;
-//    else {
-//      return 3 + index;
-//    }
-//  }
+
+  int findIndexInTriggerPattern(int index){
+    if (index >= 0) return index;
+    else {
+      return 3 + index;
+    }
+  }
 
 void setup() {
+  // Setup of LED
+  pinMode(LED_pin, OUTPUT);
+  
+  
   Serial.begin(115200);
   Serial.println("Starting Arduino BLE Client application...");
   BLEDevice::init("");
@@ -164,6 +212,11 @@ void setup() {
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
   pBLEScan->setActiveScan(true);
   pBLEScan->start(30);
+
+  // Initialize Smoothing to zero
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    readings[thisReading] = 0;
+  }
 } // End of setup.
 
 
@@ -174,6 +227,7 @@ void loop() {
   // BLE Server with which we wish to connect.  Now we connect to it.  Once we are 
   // connected we set the connected flag to be true.
   if (doConnect == true) {
+    Serial.println("doConnect is true!");
     if (connectToServer(*pServerAddress)) {
       Serial.println("We are now connected to the BLE Server.");
       connected = true;
@@ -182,5 +236,6 @@ void loop() {
     }
     doConnect = false;
   }
+  Serial.println("waiting...");
   delay(1000);
 } // End of loop
