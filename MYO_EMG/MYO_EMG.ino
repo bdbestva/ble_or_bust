@@ -179,16 +179,6 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   } // onResult
 }; // MyAdvertisedDeviceCallbacks
 
-
-
-//bool checkDoubleFlex() {
-//    if (triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 1)] && !triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 2)] && triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 3)]){
-//      Serial.println("Double flex detected");
-//      return true;
-//    }
-//    return false;
-//  }
-
   int findIndexInTriggerPattern(int index){
     if (index >= 0) return index;
     else {
