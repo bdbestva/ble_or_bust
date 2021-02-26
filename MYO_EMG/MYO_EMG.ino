@@ -37,6 +37,7 @@ int readIndex = 0;              // the index of the current reading
 int total = 0;                  // the running total
 int average = 0;                // the average
 // End of Smoothing Variables 
+int diffIndex = 0; // the index for the average array
 
 int LED_pin = 23;
 
@@ -50,22 +51,32 @@ static void notifyCallback(
       Serial.print(",");
       Serial.print(200);
       Serial.print(",");
+      int avgArr[numReadings/2]; // new empty array for averages
+
       int data_readout = (int8_t)pData[i];
       total = total - readings[readIndex];
       readings[readIndex] = data_readout;
       total = total + readings[readIndex];
+      
       readIndex = readIndex + 1;
 
       // If we're at the end of the array
       if (readIndex >= numReadings){
         readIndex = 0;
       }
+      if (diffIndex >= numReadings/2){
+        diffIndex = 0;
+      }
 
       average = total / numReadings; 
       
+      avgArr[diffIndex] = average;
+      diffIndex = diffIndex + 1;
       
       Serial.println(average);
-      if  (average > 100){
+      if (sizeof(avgArr) > 1  && avgArr[diffIndex] - avgArr[diffIndex - 1] > 5) {
+      // the average array must have more than one element to calculate the difference
+      // one downside of this is that there needs to be at least two average values in order for this to happen
         triggered = true;
         digitalWrite(LED_pin, HIGH);
         break;
