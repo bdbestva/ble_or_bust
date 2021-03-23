@@ -39,7 +39,7 @@ int average = 0;                // the average
 // End of Smoothing Variables 
 int diffIndex = 0; // the index for the average array
 
-int LED_pin = 23;
+int LED_pin = 22;
 
 static void notifyCallback(
   BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
