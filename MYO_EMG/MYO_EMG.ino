@@ -39,7 +39,12 @@ int average = 0;                // the average
 // End of Smoothing Variables 
 int diffIndex = 0; // the index for the average array
 
-int LED_pin = 22;
+int LED_pin = 23;
+
+
+//second digital output
+int LED_pin_2 = 22; 
+
 
 static void notifyCallback(
   BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
@@ -70,9 +75,11 @@ static void notifyCallback(
 
       average = total / numReadings; 
       
+
       avgArr[diffIndex] = average;
       diffIndex = diffIndex + 1;
       
+      //first output 
       Serial.println(average);
       if (sizeof(avgArr) > 1  && avgArr[diffIndex] - avgArr[diffIndex - 1] > 5) {
       // the average array must have more than one element to calculate the difference
@@ -85,6 +92,19 @@ static void notifyCallback(
         triggered = false;
         digitalWrite(LED_pin, LOW);
       }
+
+      
+      //repeat the code for the second output
+      //when linear actuator on, the other off so reverse the output 
+      Serial.println(average);
+      if  (average > 100){
+        digitalWrite(LED_pin_2, LOW);
+        break;
+      }
+      else{
+        digitalWrite(LED_pin_2, HIGH);
+      }
+      
       //Serial.print(" ");
     }
 }
@@ -200,7 +220,9 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 void setup() {
   // Setup of LED
   pinMode(LED_pin, OUTPUT);
-  
+
+  // Second output
+  pinMode(LED_pin_2, OUTPUT); 
   
   Serial.begin(115200);
   Serial.println("Starting Arduino BLE Client application...");
