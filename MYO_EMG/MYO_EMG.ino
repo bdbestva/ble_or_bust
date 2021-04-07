@@ -6,6 +6,8 @@
  * @brief   Communicating between the Myo armband and ESP32 via BLE to receive EMG notifications
  * 
  * Edited by Caleb Tseng-Tham, January 2020
+ *
+ * Edited by Yewon Kwak, Timothy Jo, Ash Bestvater, Feb-April 2021
  */
 
 #include <BLEDevice.h>
@@ -39,10 +41,10 @@ int average = 0;                // the average
 // End of Smoothing Variables 
 int diffIndex = 0; // the index for the average array
 
+//first digital output
 int LED_pin = 23;
 
-
-//second digital output
+//second digital output with reversed on/off functionality
 int LED_pin_2 = 22; 
 
 
@@ -86,26 +88,16 @@ static void notifyCallback(
       // one downside of this is that there needs to be at least two average values in order for this to happen
         triggered = true;
         digitalWrite(LED_pin, HIGH);
+        digitalWrite(LED_pin_2, LOW);
+        //repeat the code for the second output
+        //when linear actuator on, the other off so reverse the output 
         break;
       }
       else{
         triggered = false;
         digitalWrite(LED_pin, LOW);
-      }
-
-      
-      //repeat the code for the second output
-      //when linear actuator on, the other off so reverse the output 
-      Serial.println(average);
-      if  (average > 100){
-        digitalWrite(LED_pin_2, LOW);
-        break;
-      }
-      else{
         digitalWrite(LED_pin_2, HIGH);
       }
-      
-      //Serial.print(" ");
     }
 }
 
